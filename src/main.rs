@@ -1,6 +1,6 @@
 use std::{thread, time::Duration};
 
-use opencv::{core, highgui, imgproc, objdetect, prelude::*, types, videoio, Result};
+use opencv::{core, highgui, imgcodecs, imgproc, objdetect, prelude::*, types, videoio, Result};
 
 fn main() -> Result<()> {
     let window = "Computer Vision Camera Zero";
@@ -9,14 +9,14 @@ fn main() -> Result<()> {
     let (xml, mut cam) = {
         (
             "/usr/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml".to_owned(),
-            videoio::VideoCapture::new_default(0)?, // 0 is the default camera
+            videoio::VideoCapture::new_default(1)?, // 0 is the default camera
         )
     };
     #[cfg(not(ocvrs_opencv_branch_32))]
     let (xml, mut cam) = {
         (
             core::find_file("haarcascades/haarcascade_frontalface_alt.xml", true, false)?,
-            videoio::VideoCapture::new(0, videoio::CAP_ANY)?, // 0 is the default camera
+            videoio::VideoCapture::new(1, videoio::CAP_ANY)?, // 0 is the default camera
         )
     };
     let opened = videoio::VideoCapture::is_opened(&cam)?;
@@ -64,6 +64,13 @@ fn main() -> Result<()> {
         println!("faces: {}", faces.len());
         for face in faces {
             println!("face {:?}", face);
+
+            // take screenshot of faces here
+            let screenshot_image_name = format!("opencv_frame_{:?}.png", face);
+            let screenshot_vector = core::Vector::<i32>::new();
+            highgui::imshow(&screenshot_image_name, &frame);
+            imgcodecs::imwrite(&screenshot_image_name, &frame, &screenshot_vector)?;
+
             let scaled_face = core::Rect {
                 x: face.x * 4,
                 y: face.y * 4,
