@@ -1,7 +1,8 @@
 [package]
-name = "opencv"
+name = "client"
 version = "0.1.0"
 edition = "2021"
 
 [dependencies]
 opencv = "0.63"
+tokio = "1.18.2"

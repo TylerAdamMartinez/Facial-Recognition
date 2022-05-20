@@ -9,14 +9,14 @@ fn main() -> Result<()> {
     let (xml, mut cam) = {
         (
             "/usr/share/OpenCV/haarcascades/haarcascade_frontalface_alt.xml".to_owned(),
-            videoio::VideoCapture::new_default(1)?, // 0 is the default camera
+            videoio::VideoCapture::new_default(0)?, // 0 is the default camera
         )
     };
     #[cfg(not(ocvrs_opencv_branch_32))]
     let (xml, mut cam) = {
         (
             core::find_file("haarcascades/haarcascade_frontalface_alt.xml", true, false)?,
-            videoio::VideoCapture::new(1, videoio::CAP_ANY)?, // 0 is the default camera
+            videoio::VideoCapture::new(0, videoio::CAP_ANY)?, // 0 is the default camera
         )
     };
     let opened = videoio::VideoCapture::is_opened(&cam)?;
@@ -24,6 +24,7 @@ fn main() -> Result<()> {
         panic!("Unable to open default camera!");
     }
     let mut face = objdetect::CascadeClassifier::new(&xml)?;
+    let mut image_count: usize = 0;
     loop {
         let mut frame = Mat::default();
         cam.read(&mut frame)?;
@@ -65,19 +66,13 @@ fn main() -> Result<()> {
         for face in faces {
             println!("face {:?}", face);
 
-            // take screenshot of faces here
-            let screenshot_image_name = format!("opencv_frame_{:?}.png", face);
-            let screenshot_vector = core::Vector::<i32>::new();
-            highgui::imshow(&screenshot_image_name, &frame);
-            imgcodecs::imwrite(&screenshot_image_name, &frame, &screenshot_vector)?;
-
             let scaled_face = core::Rect {
                 x: face.x * 4,
                 y: face.y * 4,
                 width: face.width * 4,
                 height: face.height * 4,
             };
-            imgproc::rectangle(
+            let face_rectangle = imgproc::rectangle(
                 &mut frame,
                 scaled_face,
                 core::Scalar::new(0f64, -1f64, -1f64, -1f64),
@@ -85,6 +80,14 @@ fn main() -> Result<()> {
                 8,
                 0,
             )?;
+
+            // take screenshot of faces here
+            // TODO: convert to ROIs
+            image_count += 1;
+            let screenshot_image_name = format!("opencv_frame_{}.png", image_count);
+            let mut screenshot_vector = core::Vector::<i32>::new();
+            screenshot_vector.push(imgcodecs::IMWRITE_PAM_FORMAT_GRAYSCALE_ALPHA);
+            imgcodecs::imwrite(&screenshot_image_name, &frame, &screenshot_vector)?;
         }
         highgui::imshow(window, &frame)?;
         if highgui::wait_key(10)? > 0 {
