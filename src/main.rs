@@ -1,10 +1,29 @@
 use opencv::{core, highgui, imgcodecs, imgproc, objdetect, prelude::*, types, videoio, Result};
-use std::{thread, time::Duration};
+use std::{env, thread, time::Duration};
 use tokio::net::UdpSocket;
 
-fn main() -> Result<()> {
-    let window = "Computer Vision Camera Zero";
+#[tokio::main]
+async fn main() -> Result<()> {
+    let socket_addr = env::args()
+        .nth(1)
+        .unwrap_or_else(|| "127.0.0.1:8080".to_owned());
+    let socket = UdpSocket::bind(&socket_addr)
+        .await
+        .expect("failed to bind to address");
 
+    println!(
+        "Listening on: {}",
+        socket
+            .local_addr()
+            .expect("failed to display local address"),
+    );
+
+    match socket.connect(&socket_addr).await {
+        Ok(_) => {}
+        Err(e) => println!("{:?}", e),
+    }
+
+    let window = "Testing Computer Vision Camera Zero";
     highgui::named_window(window, 0)?;
     #[cfg(ocvrs_opencv_branch_32)]
     let (xml, mut cam) = {
@@ -82,14 +101,19 @@ fn main() -> Result<()> {
                 0,
             )?;
 
-            // take screenshot of faces here
-            // TODO: convert to ROIs
             image_count += 1;
             let screenshot_image_name = format!("opencv_frame_{}.png", image_count);
             let mut screenshot_vector = core::Vector::<i32>::new();
             screenshot_vector.push(imgcodecs::IMWRITE_PAM_FORMAT_GRAYSCALE_ALPHA);
             imgcodecs::imwrite(&screenshot_image_name, &frame, &screenshot_vector)?;
+
+            let dumby_data = vec![0u8; 65];
+            match socket.send(&dumby_data).await {
+                Ok(_) => {}
+                Err(e) => println!("SEND ERROR\n{:#?}", e),
+            }
         }
+
         highgui::imshow(window, &frame)?;
         if highgui::wait_key(10)? > 0 {
             break;
