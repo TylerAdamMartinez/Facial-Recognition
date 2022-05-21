@@ -1,10 +1,11 @@
-use std::{thread, time::Duration};
-
 use opencv::{core, highgui, imgcodecs, imgproc, objdetect, prelude::*, types, videoio, Result};
+use std::{thread, time::Duration};
+use tokio::net::UdpSocket;
 
 fn main() -> Result<()> {
     let window = "Computer Vision Camera Zero";
-    highgui::named_window(window, 1)?;
+
+    highgui::named_window(window, 0)?;
     #[cfg(ocvrs_opencv_branch_32)]
     let (xml, mut cam) = {
         (
@@ -72,7 +73,7 @@ fn main() -> Result<()> {
                 width: face.width * 4,
                 height: face.height * 4,
             };
-            let face_rectangle = imgproc::rectangle(
+            imgproc::rectangle(
                 &mut frame,
                 scaled_face,
                 core::Scalar::new(0f64, -1f64, -1f64, -1f64),
